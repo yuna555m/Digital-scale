@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ركن الميزان الرقمي - مبادرة فكر آمن</title>
+    <!-- تحميل مكتبة Tailwind CSS للتصميم المتجاوب -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* تطبيق خط Calibri كما طلب المستخدم */
+        * {
+            font-family: 'Calibri', 'Segoe UI', Tahoma, sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f7fbf8;
+            color: #1f2937;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* خلفية شعار المملكة العربية السعودية (السيفين والنخلة) بشفافية خفيفة */
+        .saudi-watermark {
+            position: fixed;
+            top: 54%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(75vw, 540px);
+            height: min(75vw, 540px);
+            opacity: 0.055;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* تخطيط رأس الصفحة المتوازن (3 أعمدة) */
+        .app-header-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            align-items: start;
+            gap: 12px;
+            padding: 10px 16px;
+        }
+
+        @media (min-width: 1024px) {
+            .app-header-grid {
+                grid-template-columns: 1fr auto 1fr;
+                padding: 10px 20px;
+                gap: 20px;
+            }
+        }
+
+        /* تأثيرات بطاقة المنشور القابلة للسحب */
+        .post-card {
+            cursor: grab;
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .post-card:active {
+            cursor: grabbing;
+            transform: scale(1.03);
+        }
+
+        .post-card.dragging {
+            opacity: 0.65;
+            transform: scale(0.98);
+        }
+
+        /* تأثيرات السلات الثلاث */
+        .basket-zone {
+            transition: all 0.25s ease;
+        }
+
+        .basket-zone.drag-over {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 14px 28px -6px rgba(0, 108, 53, 0.25);
+            border-color: #006C35;
+            background-color: #ecfdf5;
+        }
+
+        /* حركات ظهور العناصر */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .animate-pop-in {
+            animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .progress-fill {
+            transition: width 0.45s ease-in-out;
+        }
+    </style>
+</head>
+<body class="selection:bg-[#006C35] selection:text-white">
+
+    <!-- العلامة المائية: شعار المملكة العربية السعودية (السيفين والنخلة) باللون الأخضر -->
+    <div class="saudi-watermark" aria-hidden="true">
+        <svg viewBox="0 0 400 360" fill="#006C35" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+            <!-- النخلة في المنتصف -->
+            <path d="M194 165 L206 165 L204 78 L196 78 Z" />
+            <!-- جريد النخلة -->
+            <path d="M200 82 C175 62, 145 65, 130 82 C152 76, 176 78, 200 88 Z" />
+            <path d="M200 82 C225 62, 255 65, 270 82 C248 76, 224 78, 200 88 Z" />
+            <path d="M200 78 C170 42, 135 42, 118 58 C145 53, 174 58, 200 82 Z" />
+            <path d="M200 78 C230 42, 265 42, 282 58 C255 53, 226 58, 200 82 Z" />
+            <path d="M200 74 C180 30, 152 24, 136 34 C160 35, 182 47, 200 76 Z" />
+            <path d="M200 74 C220 30, 248 24, 264 34 C240 35, 218 47, 200 76 Z" />
+            <path d="M200 72 C192 28, 175 16, 165 20 C180 26, 192 44, 200 72 Z" />
+            <path d="M200 72 C208 28, 225 16, 235 20 C220 26, 208 44, 200 72 Z" />
+            <!-- عذوق التمر -->
+            <ellipse cx="187" cy="95" rx="5" ry="9" transform="rotate(15 187 95)" />
+            <ellipse cx="213" cy="95" rx="5" ry="9" transform="rotate(-15 213 95)" />
+            <!-- السيف الأول (من اليسار إلى اليمين) -->
+            <path d="M92 268 C135 245, 215 205, 315 148 L322 153 C220 214, 142 254, 96 276 Z" />
+            <path d="M84 260 L102 282 L96 287 L78 265 Z" />
+            <path d="M74 277 L88 268 L93 274 L79 283 Z" />
+            <circle cx="73" cy="283" r="6" />
+            <!-- السيف الثاني (من اليمين إلى اليسار) -->
+            <path d="M308 268 C265 245, 185 205, 85 148 L78 153 C180 214, 258 254, 304 276 Z" />
+            <path d="M316 260 L298 282 L304 287 L322 265 Z" />
+            <path d="M326 277 L312 268 L307 274 L321 283 Z" />
+            <circle cx="327" cy="283" r="6" />
+        </svg>
+    </div>
+
+    <!-- الشريط العلوي (الهيدر) بتخطيط متوازن من 3 أعمدة -->
+    <header class="relative z-10 bg-white border-b-2 border-[#006C35] shadow-sm">
+        <div class="w-full">
+            <!-- استخدام dir="ltr" لضمان تثبيت شعار المؤسسة في أقصى أعلى اليسار وبيانات الكلية في أقصى أعلى اليمين -->
+            <div dir="ltr" class="app-header-grid py-2 px-4 sm:px-6 items-center">
+                
+                <!-- العمود الأيسر (أعلى اليسار تماماً): شعار المؤسسة العامة للتدريب التقني والمهني -->
+                <div class="order-1 flex items-center justify-start justify-self-start self-center">
+                    <div class="bg-white py-1 flex items-center">
+                        <img src="tvtc-logo.png" alt="المؤسسة العامة للتدريب التقني والمهني" class="h-[54px] sm:h-[62px] w-auto object-contain" onerror="this.style.display='none'; document.getElementById('tvtc-fallback-logo').classList.remove('hidden');">
+                        <!-- شعار SVG عالي الدقة مطابق تماماً لهوية المؤسسة عند تعذر تحميل الملف الخارجي -->
+                        <div id="tvtc-fallback-logo" class="hidden flex items-center gap-2.5" dir="ltr">
+                            <div class="text-right leading-snug" dir="rtl">
+                                <div class="text-[14px] sm:text-[15px] font-bold text-[#4d5250] tracking-tight">
+                                    المؤسسة العامة للتدريب التقني والمهني
+                                </div>
+                                <div class="text-[11px] font-semibold text-[#5A605E]" dir="ltr">
+                                    Technical and Vocational Training Corporation
+                                </div>
+                            </div>
+                            <svg class="w-[52px] h-[52px] flex-shrink-0" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                                <g transform="translate(60,52)">
+                                    <path d="M-6,-22 L-14,-44 C-10,-48 -4,-48 0,-42 L6,-22 Z" fill="#00acc1"/>
+                                    <path d="M6,-22 L14,-44 C10,-48 4,-48 0,-42 L-6,-22 Z" fill="#a8d5ba"/>
+                                    <path d="M22,-6 L44,-14 C48,-10 48,-4 42,0 L22,6 Z" fill="#5b8fa8"/>
+                                    <path d="M22,6 L44,14 C48,10 48,4 42,0 L22,-6 Z" fill="#26a69a"/>
+                                    <path d="M6,22 L14,44 C10,48 4,48 0,42 L-6,22 Z" fill="#00897b"/>
+                                    <path d="M-6,22 L-14,44 C-10,48 -4,48 0,42 L6,22 Z" fill="#00a8b5"/>
+                                    <path d="M-22,6 L-44,14 C-48,10 -48,4 -42,0 L-22,-6 Z" fill="#a5d6a7"/>
+                                    <path d="M-22,-6 L-44,-14 C-48,-10 -48,-4 -42,0 L-22,6 Z" fill="#00acc1"/>
+                                    <polygon points="0,-38 8,-16 30,-24 16,-6 38,0 16,6 30,24 8,16 0,38 -8,16 -30,24 -16,6 -38,0 -16,-6 -30,-24 -8,-16" fill="#4d5250"/>
+                                    <circle cx="0" cy="0" r="12" fill="#FFFFFF"/>
+                                    <circle cx="0" cy="0" r="7" fill="none" stroke="#4d5250" stroke-width="2" stroke-dasharray="3,2"/>
+                                    <path d="M-4,35 L-34,47 L-4,43 Z" fill="#4d5250"/>
+                                    <path d="M4,35 L34,47 L4,43 Z" fill="#4d5250"/>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- العمود الأوسط (المنتصف): شارة المبادرة + عنوان الركن + الشعار النصي -->
+                <div class="order-2 flex flex-col items-center text-center gap-1.5 self-center py-1 bg-white rounded-xl shadow-xs px-4" dir="rtl">
+                    <!-- شارة المبادرة -->
+                    <span class="inline-flex items-center gap-1.5 bg-[#ECFDF5] text-[#006C35] border border-[#10B981]/40 px-3.5 py-0.5 rounded-full text-[13px] sm:text-[14px] font-bold shadow-xs">
+                        <span>🛡️</span>
+                        <span>مبادرة فكر آمن</span>
+                    </span>
+                    
+                    <!-- العنوان الرئيسي للركن -->
+                    <div class="flex items-center justify-center gap-2 text-[#006C35]">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#006C35] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 7l9-3 9 3M5 7l-2 7h4L5 7zm14 0l-2 7h4l-2-7zM8 21h8"/>
+                        </svg>
+                        <h1 class="text-[20px] sm:text-[23px] font-bold leading-tight tracking-wide">
+                            ركن "الميزان الرقمي"
+                        </h1>
+                    </div>
+
+                    <!-- الشعار النصي للمبادرة -->
+                    <div class="text-[13px] sm:text-[14px] italic font-semibold text-emerald-800 bg-emerald-50/80 border border-emerald-200 px-4 py-0.5 rounded-md">
+                        "بوعينا نحمي فكرنا .... وباعتدالنا نبني وطننا"
+                    </div>
+                </div>
+
+                <!-- العمود الأيمن (أعلى اليمين): الكلية التقنية الرقمية للبنات بتبوك + المدربة أمل البلوي -->
+                <div dir="rtl" class="order-3 flex flex-col items-end justify-self-end self-center">
+                    <div class="bg-emerald-50/60 border border-emerald-200/80 px-3 py-1.5 rounded-xl text-right shadow-xs">
+                        <div class="text-[15px] sm:text-[16px] font-bold text-[#006C35] leading-snug">
+                            الكلية التقنية الرقمية للبنات بتبوك
+                        </div>
+                        <div class="text-[13px] sm:text-[14px] font-semibold text-gray-700 mt-0.5 flex items-center justify-end gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-[#10B981] inline-block"></span>
+                            <span>المدربة: أمل البلوي</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- شريط مدمج لمؤشر التقدم وعداد النقاط أسفل الرأس مباشرة -->
+    <div class="relative z-10 bg-emerald-50/90 border-b border-emerald-200/80 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-3">
+            <!-- التعليمات المختصرة -->
+            <p class="text-xs sm:text-sm text-gray-700 font-semibold">
+                💡 <span class="text-[#006C35] font-bold">التعليمات:</span> اسحبي بطاقة المنشور وأفلتيها في السلة المناسبة (أو اضغطي على السلة مباشرة).
+            </p>
+
+            <!-- عداد التقدم والنقاط المدمج -->
+            <div class="flex items-center gap-3 mr-auto sm:mr-0">
+                <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-emerald-200 shadow-sm">
+                    <span id="progress-text" class="text-xs sm:text-sm font-bold text-[#006C35] whitespace-nowrap">
+                        العبارة 1 من 9
+                    </span>
+                    <div class="w-20 sm:w-28 bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div id="progress-bar" class="progress-fill bg-[#006C35] h-2 rounded-full" style="width: 11%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-[#006C35] text-white px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                    <span>⭐ النقاط:</span>
+                    <span id="score-display">0 / 9</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي للعبة -->
+    <main class="relative z-10 flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 flex flex-col justify-center gap-6">
+
+        <!-- منطقة عرض البطاقة (المنشور الرقمي) والسلات -->
+        <section id="game-play-area" class="flex-grow flex flex-col items-center justify-center gap-7">
+            
+            <!-- بطاقة المنشور القابلة للسحب -->
+            <div class="w-full max-w-2xl">
+                <div id="draggable-card" draggable="true" class="post-card bg-white border-2 border-[#006C35] rounded-2xl p-6 sm:p-8 shadow-lg relative overflow-hidden">
+                    <!-- شريط علوي للبطاقة -->
+                    <div class="flex items-center justify-between border-b border-emerald-100 pb-3 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-full bg-emerald-100 text-[#006C35] flex items-center justify-center font-bold text-base">
+                                📱
+                            </span>
+                            <div>
+                                <span id="card-source" class="text-sm font-bold text-[#006C35] block">منصة تواصل اجتماعي</span>
+                                <span class="text-xs text-gray-500">منشور رقمي للتصنيف</span>
+                            </div>
+                        </div>
+                        <span class="bg-emerald-50 text-[#006C35] border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full">
+                            اسحبي البطاقة ✋
+                        </span>
+                    </div>
+
+                    <!-- نص العبارة / المنشور -->
+                    <p id="card-text" class="text-xl sm:text-2xl font-bold text-gray-800 leading-relaxed text-center py-4">
+                        جاري تحميل العبارة...
+                    </p>
+
+                    <!-- تلميح أسفل البطاقة -->
+                    <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center text-xs text-gray-500 gap-1">
+                        <span>اسحبي البطاقة إلى إحدى السلات بالأسفل أو انقري على السلة المناسبة</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- السلات الثلاث (مناطق الإفلات) -->
+            <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                
+                <!-- السلة 1: وسطية واعتدال -->
+                <div data-category="moderation" onclick="handleClassification('moderation')" class="basket-zone cursor-pointer bg-white border-2 border-emerald-300 hover:border-[#006C35] rounded-2xl p-5 flex flex-col items-center text-center shadow-md group">
+                    <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-[#006C35] flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform shadow-inner">
+                        ⚖️
+                    </div>
+                    <h2 class="text-xl font-bold text-[#006C35] mb-1">وسطية واعتدال</h2>
+                    <p class="text-sm text-gray-600">خطاب متزن، تسامح، وعي، وانتماء وطني إيجابي</p>
+                    <span class="mt-3 inline-block text-xs font-bold text-[#006C35] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                        أفلتي هنا أو اضغطي
+                    </span>
+                </div>
+
+                <!-- السلة 2: تطرف وتشدد -->
+                <div data-category="extremism" onclick="handleClassification('extremism')" class="basket-zone cursor-pointer bg-white border-2 border-emerald-300 hover:border-[#006C35] rounded-2xl p-5 flex flex-col items-center text-center shadow-md group">
+                    <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-700 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform shadow-inner">
+                        🚫
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 group-hover:text-[#006C35] mb-1">تطرف وتشدد</h2>
+                    <p class="text-sm text-gray-600">إقصاء، تعصب، كراهية، أو تحريض على النظام</p>
+                    <span class="mt-3 inline-block text-xs font-bold text-[#006C35] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                        أفلتي هنا أو اضغطي
+                    </span>
+                </div>
+
+                <!-- السلة 3: شائعة -->
+                <div data-category="rumor" onclick="handleClassification('rumor')" class="basket-zone cursor-pointer bg-white border-2 border-emerald-300 hover:border-[#006C35] rounded-2xl p-5 flex flex-col items-center text-center shadow-md group">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition-transform shadow-inner">
+                        📢
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 group-hover:text-[#006C35] mb-1">شائعة</h2>
+                    <p class="text-sm text-gray-600">أخبار مجهولة المصدر، تضليل، أو روابط احتيالية</p>
+                    <span class="mt-3 inline-block text-xs font-bold text-[#006C35] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                        أفلتي هنا أو اضغطي
+                    </span>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- شاشة النتيجة النهائية (مخفية افتراضياً) -->
+        <section id="result-screen" class="hidden animate-pop-in bg-white border-2 border-[#006C35] rounded-3xl p-6 sm:p-10 shadow-xl max-w-3xl mx-auto w-full text-center">
+            <div class="w-20 h-20 rounded-full bg-emerald-100 text-[#006C35] flex items-center justify-center text-4xl mx-auto mb-4 shadow-sm">
+                🏆
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-[#006C35] mb-2">أحسنتِ! أتممتِ تحدي الميزان الرقمي</h2>
+            <p class="text-base sm:text-lg text-gray-600 mb-4">مبادرة فكر آمن — الكلية التقنية الرقمية للبنات بتبوك</p>
+
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-6 inline-block min-w-[260px]">
+                <div class="text-sm font-bold text-gray-600 mb-1">نتيجتكِ النهائية</div>
+                <div id="final-score" class="text-4xl font-bold text-[#006C35] mb-2">0 / 9</div>
+                <div id="final-grade" class="text-base font-bold text-emerald-800 bg-white px-4 py-1.5 rounded-full border border-emerald-200">
+                    سفيرة الوسطية والوعي الرقمي
+                </div>
+            </div>
+
+            <!-- مراجعة الإجابات -->
+            <div class="text-right mb-6">
+                <h3 class="text-lg font-bold text-[#006C35] mb-3 border-b border-emerald-100 pb-2">📋 ملخص المراجعة التوعوية:</h3>
+                <div id="review-list" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                    <!-- يتم تعبئتها برمجياً -->
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="bg-[#006C35] hover:bg-emerald-800 text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer">
+                🔄 إعادة اللعبة مرة أخرى
+            </button>
+        </section>
+
+    </main>
+
+    <!-- نافذة التصحيح الفوري والشرح المبسط (Modal) -->
+    <div id="feedback-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="animate-pop-in bg-white border-2 border-[#006C35] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl text-center">
+            <div id="feedback-icon" class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-4xl">
+                ✅
+            </div>
+            <h3 id="feedback-title" class="text-2xl font-bold mb-2 text-[#006C35]">
+                إجابة صحيحة!
+            </h3>
+            <div id="feedback-badge" class="inline-block px-4 py-1 rounded-full text-sm font-bold mb-4 bg-emerald-100 text-[#006C35]">
+                التصنيف الصحيح: وسطية واعتدال
+            </div>
+            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-right mb-6">
+                <div class="text-xs font-bold text-[#006C35] mb-1">💡 التوضيح التربوي والرقمي:</div>
+                <p id="feedback-explanation" class="text-base text-gray-800 leading-relaxed font-semibold">
+                    شرح التصنيف يظهر هنا...
+                </p>
+            </div>
+            <button id="next-btn" onclick="nextStatement()" class="w-full bg-[#006C35] hover:bg-emerald-800 text-white font-bold text-lg py-3 rounded-xl shadow-md transition-all cursor-pointer">
+                العبارة التالية ⬅️
+            </button>
+        </div>
+    </div>
+
+    <!-- تذييل الصفحة -->
+    <footer class="relative z-10 bg-white border-t border-emerald-200 py-3 px-4 text-center text-xs sm:text-sm text-gray-600">
+        <span class="font-bold text-[#006C35]">المؤسسة العامة للتدريب التقني والمهني</span> | الكلية التقنية الرقمية للبنات بتبوك — مبادرة فكر آمن (المدربة: أمل البلوي)
+    </footer>
+
+    <!-- المنطق البرمجي للعبة -->
+    <script>
+        // قاعدة بيانات العبارات والمنشورات الرقمية (9 عبارات متوازنة: 3 وسطية، 3 تطرف، 3 شائعات)
+        const statementsData = [
+            {
+                id: 1,
+                source: "منصة تواصل اجتماعي",
+                text: "الاختلاف في وجهات النظر سنة كونية، والحوار الهادئ المبني على الاحترام المتبادل هو أساس التعايش السلمي في مجتمعنا.",
+                category: "moderation",
+                explanation: "هذه العبارة تعبر عن (الوسطية والاعتدال)؛ لأنها تدعو إلى التسامح والحوار البناء وتقبل الآخر دون تعصب أو إقصاء."
+            },
+            {
+                id: 2,
+                source: "مجموعة نقاش رقمية",
+                text: "كل من يخالف رأينا أو طريقتنا في التفكير فهو عدو يجب مقاطعته ومحاربته بكل الوسائل وعدم التعامل معه نهائياً!",
+                category: "extremism",
+                explanation: "هذا خطاب يمثل (التطرف والتشدد)؛ لأنه يقوم على الإقصاء والتكفير الفكري ورفض التعايش ونشر الكراهية بين أفراد المجتمع."
+            },
+            {
+                id: 3,
+                source: "رسالة متداولة (مجهولة المصدر)",
+                text: "عاجل وخطير: صدور قرار رسمي بإيقاف جميع المنصات التعليمية غداً ولمدة شهر كامل! انشرها بسرعة قبل الحذف.",
+                category: "rumor",
+                explanation: "هذه (شائعة رقمية)؛ لعدم وجود مصدر رسمي موثوق، واستخدام أسلوب الإثارة والاستعجال (انشرها قبل الحذف) لتضليل المتابعين."
+            },
+            {
+                id: 4,
+                source: "تدوينة ثقافية",
+                text: "ديننا الحنيف دين يسر ورحمة، يوازن بين متطلبات الروح والعقل، ويدعو إلى إعمار الأرض ونفع الناس جميعاً.",
+                category: "moderation",
+                explanation: "تمثل هذه العبارة جوهر (الوسطية والاعتدال) في الإسلام، حيث تجمع بين التمسك بالثوابت واليسر والرحمة والعمل النافع."
+            },
+            {
+                id: 5,
+                source: "حساب مجهول الهوية",
+                text: "لا فائدة من الأنظمة والقوانين، ويجب التمرد على كل المؤسسات المجتمعية لتحقيق ما نراه صحيحاً بالقوة.",
+                category: "extremism",
+                explanation: "هذا المحتوى يصنف ضمن (التطرف والتشدد)؛ لأنه يحرض على الفوضى والخروج على النظام العام وتهديد أمن واستقرار الوطن."
+            },
+            {
+                id: 6,
+                source: "رابط إلكتروني متداول",
+                text: "اضغط على هذا الرابط غير الرسمي وسجل بياناتك البنكية ورقم الهوية للحصول على منحة مالية فورية بقيمة 5000 ريال!",
+                category: "rumor",
+                explanation: "هذه (شائعة واحتيال رقمي)؛ فالجهات الرسمية لا تطلب البيانات البنكية عبر روابط مجهولة، ويجب التحقق دائماً من المصادر المعتمدة."
+            },
+            {
+                id: 7,
+                source: "مبادرة فكر آمن",
+                text: "حب الوطن والانتماء إليه يترجم بالجد والاجتهاد في طلب العلم، والمحافظة على مكتسباته، والمساهمة في رؤية 2030.",
+                category: "moderation",
+                explanation: "عبارة رائعة تمثل (الوسطية والاعتدال) والمواطنة الصالحة الإيجابية التي تجمع بين الاعتزاز بالهوية والعمل البناء."
+            },
+            {
+                id: 8,
+                source: "منشور متداول",
+                text: "شرب خلطة أعشاب مجهولة يتم تداولها في التطبيقات يقضي تماماً على جميع الأمراض المزمنة خلال يومين دون الحاجة للأطباء!",
+                category: "rumor",
+                explanation: "هذه (شائعة صحية) خطيرة؛ المعلومات الطبية تؤخذ فقط من وزارة الصحة والأطباء المختصين، وتداول الوصفات المجهولة يضر بالصحة."
+            },
+            {
+                id: 9,
+                source: "تعليق رقمي متشدد",
+                text: "التطور التقني والانفتاح المعرفي الحديث مرفوض جملة وتفصيلاً ويجب الانعزال التام عن العالم وعدم الاستفادة من أي علم حديث.",
+                category: "extremism",
+                explanation: "هذا يعبر عن (التطرف والتشدد) والانغلاق الفكري؛ فالإسلام يشجع على طلب العلم النافع ومواكبة التطور بما يخدم الإنسان والمجتمع."
+            }
+        ];
+
+        // بيانات أسماء التصنيفات الثلاثة
+        const categoryLabels = {
+            moderation: { name: "وسطية واعتدال", icon: "⚖️" },
+            extremism: { name: "تطرف وتشدد", icon: "🚫" },
+            rumor: { name: "شائعة", icon: "📢" }
+        };
+
+        // متغيرات حالة اللعبة
+        let shuffledStatements = [];
+        let currentIndex = 0;
+        let score = 0;
+        let userAnswers = [];
+        let isAnswered = false;
+
+        // مؤثرات صوتية بسيطة باستخدام Web Audio API دون ملفات خارجية
+        function playFeedbackSound(isCorrect) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (isCorrect) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(240, ctx.currentTime);
+                    osc.frequency.setValueAtTime(190, ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                }
+            } catch (e) {
+                // تجاهل الصوت في حال حظره من المتصفح
+            }
+        }
+
+        // خلط العبارات عشوائياً
+        function shuffleArray(array) {
+            const copy = [...array];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        // تهيئة وبدء اللعبة
+        function initGame() {
+            shuffledStatements = shuffleArray(statementsData);
+            currentIndex = 0;
+            score = 0;
+            userAnswers = [];
+            isAnswered = false;
+
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('game-play-area').classList.remove('hidden');
+            updateHeaderStats();
+            renderCurrentCard();
+        }
+
+        // تحديث شريط التقدم والنقاط
+        function updateHeaderStats() {
+            const total = shuffledStatements.length;
+            const currentNum = Math.min(currentIndex + 1, total);
+            document.getElementById('progress-text').textContent = `العبارة ${currentNum} من ${total}`;
+            document.getElementById('score-display').textContent = `${score} / ${total}`;
+            const percent = ((currentIndex) / total) * 100;
+            document.getElementById('progress-bar').style.width = `${Math.max(percent, 11)}%`;
+        }
+
+        // عرض البطاقة الحالية
+        function renderCurrentCard() {
+            const currentItem = shuffledStatements[currentIndex];
+            const cardEl = document.getElementById('draggable-card');
+            document.getElementById('card-source').textContent = currentItem.source;
+            document.getElementById('card-text').textContent = `"${currentItem.text}"`;
+
+            cardEl.classList.remove('animate-pop-in');
+            void cardEl.offsetWidth; // إعادة تفعيل الحركة
+            cardEl.classList.add('animate-pop-in');
+            isAnswered = false;
+        }
+
+        // معالجة تصنيف العبارة عند الإفلات أو النقر على السلة
+        function handleClassification(selectedCategory) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const currentItem = shuffledStatements[currentIndex];
+            const isCorrect = selectedCategory === currentItem.category;
+
+            if (isCorrect) {
+                score++;
+            }
+
+            userAnswers.push({
+                statement: currentItem,
+                selected: selectedCategory,
+                isCorrect: isCorrect
+            });
+
+            playFeedbackSound(isCorrect);
+            updateHeaderStats();
+            showFeedbackModal(isCorrect, currentItem);
+        }
+
+        // إظهار نافذة التصحيح الفوري والشرح
+        function showFeedbackModal(isCorrect, item) {
+            const modal = document.getElementById('feedback-modal');
+            const iconEl = document.getElementById('feedback-icon');
+            const titleEl = document.getElementById('feedback-title');
+            const badgeEl = document.getElementById('feedback-badge');
+            const expEl = document.getElementById('feedback-explanation');
+            const nextBtn = document.getElementById('next-btn');
+
+            const correctCatInfo = categoryLabels[item.category];
+
+            if (isCorrect) {
+                iconEl.textContent = '✅';
+                iconEl.className = 'w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-4xl bg-emerald-100 text-[#006C35]';
+                titleEl.textContent = 'أحسنتِ! تصنيف صحيح';
+                titleEl.className = 'text-2xl font-bold mb-2 text-[#006C35]';
+            } else {
+                iconEl.textContent = '💡';
+                iconEl.className = 'w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-4xl bg-amber-100 text-amber-700';
+                titleEl.textContent = 'انتبهي! التصنيف الصحيح مختلف';
+                titleEl.className = 'text-2xl font-bold mb-2 text-amber-700';
+            }
+
+            badgeEl.textContent = `التصنيف الصحيح: ${correctCatInfo.icon} ${correctCatInfo.name}`;
+            expEl.textContent = item.explanation;
+
+            if (currentIndex >= shuffledStatements.length - 1) {
+                nextBtn.textContent = 'عرض النتيجة النهائية 🏆';
+            } else {
+                nextBtn.textContent = 'العبارة التالية ⬅️';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        // الانتقال للعبارة التالية أو شاشة النهاية
+        function nextStatement() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            currentIndex++;
+
+            if (currentIndex < shuffledStatements.length) {
+                updateHeaderStats();
+                renderCurrentCard();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        // عرض شاشة النتيجة النهائية
+        function showFinalResults() {
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('game-play-area').classList.add('hidden');
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+
+            const total = shuffledStatements.length;
+            document.getElementById('final-score').textContent = `${score} / ${total}`;
+
+            const gradeEl = document.getElementById('final-grade');
+            if (score >= 8) {
+                gradeEl.textContent = '🌟 ممتاز — سفيرة الوسطية والوعي الرقمي';
+            } else if (score >= 6) {
+                gradeEl.textContent = '👏 جيد جداً — وعي رقمي متميز';
+            } else {
+                gradeEl.textContent = '💪 محاولة جيدة — استمري في تعزيز وعيكِ الرقمي';
+            }
+
+            // بناء قائمة المراجعة
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            userAnswers.forEach((ans, idx) => {
+                const correctLabel = categoryLabels[ans.statement.category];
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border ${ans.isCorrect ? 'bg-emerald-50/70 border-emerald-200' : 'bg-amber-50/70 border-amber-200'} text-sm`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between font-bold mb-1">
+                        <span class="text-gray-800">${idx + 1}. ${ans.statement.text.substring(0, 65)}...</span>
+                        <span class="${ans.isCorrect ? 'text-[#006C35]' : 'text-amber-700'} whitespace-nowrap mr-2">
+                            ${ans.isCorrect ? '✅ صحيح' : '⚠️ خطأ'}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-600">
+                        التصنيف الصحيح: <strong class="text-[#006C35]">${correctLabel.icon} ${correctLabel.name}</strong>
+                    </div>
+                `;
+                reviewList.appendChild(div);
+            });
+        }
+
+        // إعادة تشغيل اللعبة
+        function restartGame() {
+            initGame();
+        }
+
+        // إعداد أحداث السحب والإفلات (Drag & Drop) بالماوس واللمس
+        function setupDragAndDrop() {
+            const card = document.getElementById('draggable-card');
+            const baskets = document.querySelectorAll('.basket-zone');
+
+            // أحداث الماوس (HTML5 Drag and Drop)
+            card.addEventListener('dragstart', (e) => {
+                card.classList.add('dragging');
+                if (e.dataTransfer) {
+                    e.dataTransfer.setData('text/plain', 'card');
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                baskets.forEach(b => b.classList.remove('drag-over'));
+            });
+
+            baskets.forEach(basket => {
+                basket.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    basket.classList.add('drag-over');
+                });
+
+                basket.addEventListener('dragleave', () => {
+                    basket.classList.remove('drag-over');
+                });
+
+                basket.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    basket.classList.remove('drag-over');
+                    const category = basket.getAttribute('data-category');
+                    if (category) {
+                        handleClassification(category);
+                    }
+                });
+            });
+
+            // دعم السحب باللمس (Touch Events) للشاشات الذكية والأجهزة اللوحية
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            card.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    card.classList.add('dragging');
+                }
+            }, { passive: true });
+
+            card.addEventListener('touchmove', (e) => {
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+                const dx = touch.clientX - touchStartX;
+                const dy = touch.clientY - touchStartY;
+                card.style.transform = `translate(${dx}px, ${dy}px) scale(1.02)`;
+
+                baskets.forEach(basket => {
+                    const rect = basket.getBoundingClientRect();
+                    if (
+                        touch.clientX >= rect.left &&
+                        touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top &&
+                        touch.clientY <= rect.bottom
+                    ) {
+                        basket.classList.add('drag-over');
+                    } else {
+                        basket.classList.remove('drag-over');
+                    }
+                });
+            }, { passive: true });
+
+            card.addEventListener('touchend', (e) => {
+                card.classList.remove('dragging');
+                card.style.transform = '';
+
+                if (e.changedTouches.length > 0) {
+                    const touch = e.changedTouches[0];
+                    baskets.forEach(basket => {
+                        basket.classList.remove('drag-over');
+                        const rect = basket.getBoundingClientRect();
+                        if (
+                            touch.clientX >= rect.left &&
+                            touch.clientX <= rect.right &&
+                            touch.clientY >= rect.top &&
+                            touch.clientY <= rect.bottom
+                        ) {
+                            const category = basket.getAttribute('data-category');
+                            if (category) {
+                                handleClassification(category);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // تشغيل اللعبة عند اكتمال تحميل الصفحة
+        window.onload = function () {
+            setupDragAndDrop();
+            initGame();
+        };
+    </script>
+</body>
+</html>
